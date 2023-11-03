@@ -1,8 +1,12 @@
 <template>
   <div>
+    <div class="top-buttons">
+      <el-button type="primary" @click="append()">新建分类</el-button>
+      <el-button type="danger" @click="removeChecked">批量删除</el-button>
+    </div>
     <el-tree :data="menus" :props="defaultProps" node-key="catId" show-checkbox :default-expanded-keys="expandedKeys"
       @node-expand="onNodeExpand" @node-collapse="onNodeCollapse" :auto-expand-parent=false draggable
-      :allow-drop="allowDrop" @node-drop="onNodeDrop">
+      :allow-drop="allowDrop" @node-drop="onNodeDrop" ref="categoryTree">
       <span class="custom-tree-node" slot-scope="{ node, data }">
         <span>{{ node.label }}</span>
         <span>
@@ -78,18 +82,26 @@ export default {
       })
     },
 
-    append(data) {
-      console.log("append", data);
-      this.dialogue.type = 'add'
-      this.dialogue.name = '添加分类'
-      this.category.name = "";
+    append(data = null) {
+      console.log("append", data)
 
-      this.category.parentCid = data.catId;
-      this.category.catLevel = data.catLevel * 1 + 1;
+      this.category.name = "";
       this.category.icon = ''
       this.category.productUnit = ''
+
+      if (data === null) {
+        this.category.parentCid = 0;
+        this.category.catLevel = 1;
+      } else {
+        this.category.catId = null;
+        this.category.parentCid = data.catId;
+        this.category.catLevel = data.catLevel * 1 + 1;
+      }
+
       // this.category.showStatus = 1;
       // this.category.sort = 1;
+      this.dialogue.type = 'add'
+      this.dialogue.name = '添加分类'
       this.dialogue.visible = true;
     },
     edit(data) {
@@ -153,6 +165,14 @@ export default {
       })
     },
 
+    removeByIds(catIds) {
+      return this.$http({
+        url: this.$http.adornUrl('/product/category/delete'),
+        method: 'post',
+        data: this.$http.adornData(catIds, false)
+      })
+    },
+
     remove(node, data) {
       console.log("remove", node, data)
 
@@ -161,15 +181,41 @@ export default {
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
-        this.$http({
-          url: this.$http.adornUrl('/product/category/delete'),
-          method: 'post',
-          data: this.$http.adornData([data.catId], false)
-        }).then(({ data: retData }) => {
+        this.removeByIds([data.catId]).then(({ data: retData }) => {
           this.$message({
             type: retData.code === 0 ? "success" : "error",
             message: retData.code === 0 ?
               `删除分类【${data.name}】成功` : `删除分类【${data.name}】失败`
+          });
+          this.getMenus();
+        })
+      }).catch(() => {
+        this.$message({
+          type: 'info',
+          message: '已取消删除'
+        });
+      });
+    },
+    removeChecked() {
+      const deleteCategories = this.$refs.categoryTree.getCheckedNodes(false, false)
+      console.log('removeChecked', deleteCategories)
+      const catIds = []
+      const names = []
+      for (let i = 0; i < deleteCategories.length; i++) {
+        catIds.push(deleteCategories[i].catId)
+        names.push(deleteCategories[i].name)
+      }
+
+      this.$confirm(`批量删除分类【${names}】吗?`, '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        this.removeByIds(catIds).then(({ data: retData }) => {
+          this.$message({
+            type: retData.code === 0 ? "success" : "error",
+            message: retData.code === 0 ?
+              `批量删除分类成功` : `批量删除分类失败`
           });
           this.getMenus();
         })
@@ -222,7 +268,7 @@ export default {
         if (sibling.data.catId === draggingNode.data.catId) {
           // console.log('siblings[i].data.catId === draggingNode.data.catId')
           const level = sibling.level
-          updatedNodes.push({ catId: sibling.data.catId, sort: i, parentCid: parentCid, catLevel: level})
+          updatedNodes.push({ catId: sibling.data.catId, sort: i, parentCid: parentCid, catLevel: level })
           if (draggingNode.level !== level) {
             this.pushUpdatedChildLevels(updatedNodes, sibling)
           }
@@ -271,3 +317,9 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+.top-buttons {
+  margin-bottom: 10px;
+}
+</style>
