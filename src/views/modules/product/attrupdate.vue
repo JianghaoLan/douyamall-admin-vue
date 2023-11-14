@@ -108,11 +108,17 @@ export default {
           item.attrs.forEach(attr => {
             let v = "";
             if (_this.spuAttrsMap["" + attr.attrId]) {
-              v = _this.spuAttrsMap["" + attr.attrId].attrValue.split(";");
-              if (v.length == 1) {
-                v = v[0] + "";
+              v = _this.spuAttrsMap["" + attr.attrId].attrValue;
+              if (attr.valueType === 1) {
+                v = v.split(";")
+              } else {
+                v = v + "";
               }
+              // if (v.length == 1) {
+              //   v = v[0] + "";
+              // }
             }
+
             attrArray.push({
               attrId: attr.attrId,
               attrName: attr.attrName,
