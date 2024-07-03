@@ -1,6 +1,6 @@
 ## douyamall-admin-vue
 
-豆芽购物后台管理前端项目。基于https://gitee.com/renrenio/renren-fast-vue二次开发
+豆芽购物后端管理系统前端。基于https://gitee.com/renrenio/renren-fast-vue二次开发
 
 ## 项目部署启动
 
